@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sistema Web - Cadastro de Pacientes</title>
+
+  <!-- Bootstrap CSS (CDN) -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- FontAwesome (ícones) -->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    rel="stylesheet"
+  />
+
+  <style>
+    body { background: #f5f7fb; }
+    .app-container { min-height: 100vh; }
+    .sidebar {
+      width: 260px;
+      background: #0d6efd;
+      color: #fff;
+    }
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 16px;
+      display: block;
+      border-radius: 8px;
+      margin: 4px 8px;
+    }
+    .sidebar a.active, .sidebar a:hover { background: rgba(255,255,255,0.15); }
+    .content { padding: 24px; }
+    .card { border: none; box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+    .required::after { content: " *"; color: #dc3545; }
+    .table thead th { background: #f0f4ff; }
+    .hidden { display: none !important; }
+    .login-container { max-width: 420px; margin: 10vh auto; }
+    .badge-role { text-transform: capitalize; }
+    .form-help { font-size: 0.83rem; color: #6c757d; }
+    .header-bar { background: #fff; border-bottom: 1px solid #e9ecef; }
+  </style>
+</head>
+<body>
+
+  <!-- Tela de Login -->
+  <div id="screen-login" class="container login-container">
+    <div class="card p-4">
+      <div class="text-center mb-3">
+        <i class="fa-solid fa-user-doctor fa-2x text-primary"></i>
+        <h4 class="mt-2">Sistema de Cadastro de Pacientes</h4>
+        <p class="text-muted mb-0">Acesso ao sistema</p>
+      </div>
+      <form id="loginForm">
+        <div class="mb-3">
+          <label class="form-label required">Email</label>
+          <input type="email" class="form-control" id="loginEmail" placeholder="ex: recepcao@clinica.com" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label required">Senha</label>
+          <input type="password" class="form-control" id="loginSenha" placeholder="••••••••" required />
+          <div class="form-help">Simulação: qualquer email+senha são aceitos. Perfil pode ser escolhido abaixo.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label required">Perfil</label>
+          <select id="loginPerfil" class="form-select" required>
+            <option value="admin">admin</option>
+            <option value="recepcionista">recepcionista</option>
+            <option value="medico">medico</option>
+          </select>
+        </div>
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="fa-solid fa-right-to-bracket me-2"></i>Entrar
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Aplicação -->
+  <div id="app" class="app-container hidden">
+    <div class="d-flex">
+      <!-- Sidebar -->
+      <div class="sidebar p-3">
+        <div class="d-flex align-items-center mb-3">
+          <i class="fa-solid fa-hospital-user fa-xl me-2"></i>
+          <div>
+            <strong>Consultório</strong>
+            <div class="small">Cadastro de Pacientes</div>
+          </div>
+        </div>
+        <a href="#" data-screen="dashboard" class="active">
+          <i class="fa-solid fa-gauge-high me-2"></i>Dashboard
+        </a>
+        <a href="#" data-screen="pacientes-list">
+          <i class="fa-solid fa-users me-2"></i>Listar pacientes
+        </a>
+        <a href="#" data-screen="pacientes-form">
+          <i class="fa-solid fa-user-plus me-2"></i>Cadastrar paciente
+        </a>
+        <a href="#" data-screen="consultas-list">
+          <i class="fa-solid fa-calendar-days me-2"></i>Listar consultas
+        </a>
+        <a href="#" data-screen="consultas-form">
+          <i class="fa-solid fa-calendar-plus me-2"></i>Agendar consulta
+        </a>
+        <a href="#" data-screen="relatorios">
+          <i class="fa-solid fa-file-export me-2"></i>Relatórios
+        </a>
+
+        <hr class="border-light" />
+        <div class="small">
+          <div>Usuário: <span id="userName">—</span></div>
+          <div>Perfil: <span id="userRole" class="badge bg-light text-dark badge-role">—</span></div>
+        </div>
+        <button id="btnLogout" class="btn btn-outline-light w-100 mt-3">
+          <i class="fa-solid fa-right-from-bracket me-2"></i>Sair
+        </button>
+      </div>
+
+      <!-- Conteúdo -->
+      <div class="flex-grow-1">
+        <div class="header-bar px-3 py-2 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-stethoscope text-primary"></i>
+            <strong>Sistema Web</strong>
+            <span class="text-muted">— Consultório</span>
+          </div>
+          <div class="small text-muted" id="clock"></div>
+        </div>
+
+        <div class="content container my-4">
+
+          <!-- Dashboard -->
+          <div id="screen-dashboard">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="card p-3">
+                  <div class="d-flex align-items-center">
+                    <div class="me-3">
+                      <i class="fa-solid fa-users text-primary fa-2x"></i>
+                    </div>
+                    <div>
+                      <div class="text-muted">Pacientes cadastrados</div>
+                      <h3 id="statPacientes" class="mb-0">0</h3>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card p-3">
+                  <div class="d-flex align-items-center">
+                    <div class="me-3">
+                      <i class="fa-solid fa-calendar-check text-success fa-2x"></i>
+                    </div>
+                    <div>
+                      <div class="text-muted">Consultas agendadas</div>
+                      <h3 id="statConsultas" class="mb-0">0</h3>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card p-3">
+                  <div class="d-flex align-items-center">
+                    <div class="me-3">
+                      <i class="fa-solid fa-user-shield text-warning fa-2x"></i>
+                    </div>
+                    <div>
+                      <div class="text-muted">Perfil ativo</div>
+                      <h3 id="statPerfil" class="mb-0">—</h3>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mt-4">
+              <div class="card-body">
+                <h5 class="card-title">Atalhos</h5>
+                <div class="d-flex gap-2 flex-wrap">
+                  <button class="btn btn-primary" data-screen="pacientes-form">
+                    <i class="fa-solid fa-user-plus me-2"></i>Novo paciente
+                  </button>
+                  <button class="btn btn-outline-primary" data-screen="consultas-form">
+                    <i class="fa-solid fa-calendar-plus me-2"></i>Agendar consulta
+                  </button>
+                  <button class="btn btn-outline-secondary" data-screen="relatorios">
+                    <i class="fa-solid fa-file-export me-2"></i>Relatórios
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de Pacientes -->
+          <div id="screen-pacientes-list" class="hidden">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="card-title mb-0">Pacientes</h5>
+                  <div class="d-flex gap-2">
+                    <input class="form-control" id="searchPaciente" placeholder="Buscar por nome, email ou telefone" />
+                    <button class="btn btn-outline-secondary" id="btnExportPacientes">
+                      <i class="fa-solid fa-file-csv me-1"></i>Exportar CSV
+                    </button>
+                    <button class="btn btn-primary" data-screen="pacientes-form">
+                      <i class="fa-solid fa-user-plus me-1"></i>Novo
+                    </button>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle">
+                    <thead>
+                      <tr>
+                        <th>Nome</th>
+                        <th>Data nasc.</th>
+                        <th>Telefone</th>
+                        <th>Email</th>
+                        <th>Endereço</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="pacientesTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulário de Paciente -->
+          <div id="screen-pacientes-form" class="hidden">
+            <div class="card">
+              <div class="card-body">
+                <h5 id="pacienteFormTitle" class="card-title">Cadastrar paciente</h5>
+                <form id="pacienteForm" class="row g-3">
+                  <input type="hidden" id="pacienteId" />
+                  <div class="col-md-6">
+                    <label class="form-label required">Nome completo</label>
+                    <input type="text" class="form-control" id="pacienteNome" required />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Data de nascimento</label>
+                    <input type="date" class="form-control" id="pacienteNascimento" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Telefone</label>
+                    <input type="tel" class="form-control" id="pacienteTelefone" placeholder="(67) 99999-9999" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="pacienteEmail" />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Endereço</label>
+                    <input type="text" class="form-control" id="pacienteEndereco" />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Histórico básico</label>
+                    <textarea class="form-control" id="pacienteHistorico" rows="3" placeholder="Alergias, condições, observações..."></textarea>
+                  </div>
+                  <div class="col-12 d-flex gap-2">
+                    <button class="btn btn-primary" type="submit">
+                      <i class="fa-solid fa-floppy-disk me-1"></i>Salvar
+                    </button>
+                    <button class="btn btn-outline-secondary" type="button" data-screen="pacientes-list">
+                      <i class="fa-solid fa-list me-1"></i>Voltar à lista
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de Consultas -->
+          <div id="screen-consultas-list" class="hidden">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="card-title mb-0">Consultas</h5>
+                  <div class="d-flex gap-2">
+                    <input class="form-control" id="searchConsulta" placeholder="Buscar por paciente ou data" />
+                    <button class="btn btn-outline-secondary" id="btnExportConsultas">
+                      <i class="fa-solid fa-file-csv me-1"></i>Exportar CSV
+                    </button>
+                    <button class="btn btn-primary" data-screen="consultas-form">
+                      <i class="fa-solid fa-calendar-plus me-1"></i>Novo
+                    </button>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover align-middle">
+                    <thead>
+                      <tr>
+                        <th>Paciente</th>
+                        <th>Data/hora</th>
+                        <th>Observações</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="consultasTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulário de Consulta -->
+          <div id="screen-consultas-form" class="hidden">
+            <div class="card">
+              <div class="card-body">
+                <h5 id="consultaFormTitle" class="card-title">Agendar consulta</h5>
+                <form id="consultaForm" class="row g-3">
+                  <input type="hidden" id="consultaId" />
+                  <div class="col-md-6">
+                    <label class="form-label required">Paciente</label>
+                    <select id="consultaPaciente" class="form-select" required></select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label required">Data e hora</label>
+                    <input type="datetime-local" class="form-control" id="consultaDataHora" required />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Observações</label>
+                    <textarea class="form-control" id="consultaObs" rows="3"></textarea>
+                  </div>
+                  <div class="col-12 d-flex gap-2">
+                    <button class="btn btn-primary" type="submit">
+                      <i class="fa-solid fa-floppy-disk me-1"></i>Salvar
+                    </button>
+                    <button class="btn btn-outline-secondary" type="button" data-screen="consultas-list">
+                      <i class="fa-solid fa-list me-1"></i>Voltar à lista
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Relatórios -->
+          <div id="screen-relatorios" class="hidden">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Relatórios</h5>
+                <p class="text-muted mb-3">Exporte dados para CSV e utilize em planilhas ou gere PDF via navegador.</p>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-outline-secondary" id="btnExportCSVAll">
+                    <i class="fa-solid fa-file-csv me-2"></i>Exportar tudo (CSV)
+                  </button>
+                  <button class="btn btn-outline-secondary" id="btnPrint">
+                    <i class="fa-solid fa-file-pdf me-2"></i>Imprimir/Salvar PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /content -->
+      </div><!-- /flex-grow -->
+    </div><!-- /d-flex -->
+  </div><!-- /app -->
+
+  <!-- Bootstrap JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Utilidades
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+    const storage = {
+      get(key, def = []) {
+        try {
+          const v = JSON.parse(localStorage.getItem(key));
+          return v ?? def;
+        } catch { return def; }
+      },
+      set(key, val) { localStorage.setItem(key, JSON.stringify(val)); },
+      remove(key) { localStorage.removeItem(key); }
+    };
+    const uid = () => Math.random().toString(36).slice(2, 10);
+
+    // Estado
+    let state = {
+      user: null,
+      pacientes: storage.get("pacientes"),
+      consultas: storage.get("consultas"),
+      filtroPaciente: "",
+      filtroConsulta: ""
+    };
+
+    // Login simulado
+    $("#loginForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = $("#loginEmail").value.trim();
+      const perfil = $("#loginPerfil").value;
+      state.user = { nome: email.split("@")[0], email, perfil };
+      $("#userName").textContent = state.user.nome;
+      $("#userRole").textContent = state.user.perfil;
+      $("#statPerfil").textContent = state.user.perfil;
+      $("#screen-login").classList.add("hidden");
+      $("#app").classList.remove("hidden");
+      updateStats();
+      routeTo("dashboard");
+      toast("Login realizado com sucesso.");
+    });
+
+    $("#btnLogout").addEventListener("click", () => {
+      state.user = null;
+      $("#app").classList.add("hidden");
+      $("#screen-login").classList.remove("hidden");
+      toast("Sessão encerrada.");
+    });
+
+    // Navegação
+    function routeTo(screen) {
+      // toggle sidebar active
+      $$(".sidebar a").forEach(a => {
+        a.classList.toggle("active", a.dataset.screen === screen);
+      });
+      // toggle screens
+      const ids = ["dashboard","pacientes-list","pacientes-form","consultas-list","consultas-form","relatorios"]
+        .map(s => `#screen-${s}`);
+      ids.forEach(id => $(id).classList.add("hidden"));
+      $(`#screen-${screen}`).classList.remove("hidden");
+
+      // hooks
+      if (screen === "pacientes-list") renderPacientes();
+      if (screen === "consultas-list") renderConsultas();
+      if (screen === "pacientes-form") resetPacienteForm();
+      if (screen === "consultas-form") resetConsultaForm();
+      if (screen === "relatorios") {} // nothing
+    }
+    $$(".sidebar a, [data-screen]").forEach(el => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        routeTo(el.dataset.screen);
+      });
+    });
+
+    // Relógio simples
+    setInterval(() => {
+      const d = new Date();
+      $("#clock").textContent = d.toLocaleString("pt-BR");
+    }, 1000);
+
+    // Pacientes
+    function renderPacientes() {
+      const tbody = $("#pacientesTableBody");
+      const filtro = $("#searchPaciente").value.toLowerCase().trim();
+      const rows = state.pacientes
+        .filter(p => {
+          if (!filtro) return true;
+          const fields = [p.nome, p.email, p.telefone].map(x => (x || "").toLowerCase());
+          return fields.some(f => f.includes(filtro));
+        })
+        .map(p => `
+          <tr>
+            <td>${escapeHtml(p.nome)}</td>
+            <td>${formatDate(p.data_nascimento)}</td>
+            <td>${escapeHtml(p.telefone || "")}</td>
+            <td>${escapeHtml(p.email || "")}</td>
+            <td>${escapeHtml(p.endereco || "")}</td>
+            <td class="text-nowrap">
+              <button class="btn btn-sm btn-outline-primary" onclick="editPaciente('${p.id}')">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deletePaciente('${p.id}')">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `).join("");
+      tbody.innerHTML = rows || `<tr><td colspan="6" class="text-center text-muted">Nenhum paciente encontrado.</td></tr>`;
+      updateStats();
+      // Atualiza options de pacientes no form de consulta
+      refreshPacienteOptions();
+    }
+
+    function resetPacienteForm() {
+      $("#pacienteFormTitle").textContent = "Cadastrar paciente";
+      $("#pacienteId").value = "";
+      $("#pacienteNome").value = "";
+      $("#pacienteNascimento").value = "";
+      $("#pacienteTelefone").value = "";
+      $("#pacienteEmail").value = "";
+      $("#pacienteEndereco").value = "";
+      $("#pacienteHistorico").value = "";
+    }
+
+    $("#pacienteForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const id = $("#pacienteId").value || uid();
+      const paciente = {
+        id,
+        nome: $("#pacienteNome").value.trim(),
+        data_nascimento: $("#pacienteNascimento").value || null,
+        telefone: $("#pacienteTelefone").value.trim() || null,
+        email: $("#pacienteEmail").value.trim() || null,
+        endereco: $("#pacienteEndereco").value.trim() || null,
+        historico: $("#pacienteHistorico").value.trim() || null
+      };
+      if (!paciente.nome) { toast("Informe o nome do paciente.", true); return; }
+      const exists = state.pacientes.find(p => p.id === id);
+      if (exists) {
+        Object.assign(exists, paciente);
+        toast("Paciente atualizado.");
+      } else {
+        state.pacientes.push(paciente);
+        toast("Paciente cadastrado.");
+      }
+      storage.set("pacientes", state.pacientes);
+      routeTo("pacientes-list");
+      renderPacientes();
+    });
+
+    function editPaciente(id) {
+      const p = state.pacientes.find(x => x.id === id);
+      if (!p) return;
+      routeTo("pacientes-form");
+      $("#pacienteFormTitle").textContent = "Editar paciente";
+      $("#pacienteId").value = p.id;
+      $("#pacienteNome").value = p.nome || "";
+      $("#pacienteNascimento").value = p.data_nascimento || "";
+      $("#pacienteTelefone").value = p.telefone || "";
+      $("#pacienteEmail").value = p.email || "";
+      $("#pacienteEndereco").value = p.endereco || "";
+      $("#pacienteHistorico").value = p.historico || "";
+    }
+
+    function deletePaciente(id) {
+      if (!confirm("Deseja excluir este paciente?")) return;
+      // Remove consultas do paciente
+      state.consultas = state.consultas.filter(c => c.paciente_id !== id);
+      storage.set("consultas", state.consultas);
+      // Remove paciente
+      state.pacientes = state.pacientes.filter(p => p.id !== id);
+      storage.set("pacientes", state.pacientes);
+      renderPacientes();
+      toast("Paciente excluído.");
+    }
+
+    $("#searchPaciente").addEventListener("input", renderPacientes);
+
+    $("#btnExportPacientes").addEventListener("click", () => {
+      exportCSV("pacientes.csv", state.pacientes.map(p => ({
+        id: p.id,
+        nome: p.nome,
+        data_nascimento: p.data_nascimento || "",
+        telefone: p.telefone || "",
+        email: p.email || "",
+        endereco: p.endereco || "",
+        historico: p.historico || ""
+      })));
+    });
+
+    // Consultas
+    function renderConsultas() {
+      const tbody = $("#consultasTableBody");
+      const filtro = $("#searchConsulta").value.toLowerCase().trim();
+      const rows = state.consultas
+        .filter(c => {
+          const paciente = state.pacientes.find(p => p.id === c.paciente_id);
+          const nome = (paciente?.nome || "").toLowerCase();
+          const data = (c.data_hora || "").toLowerCase();
+          if (!filtro) return true;
+          return nome.includes(filtro) || data.includes(filtro);
+        })
+        .map(c => {
+          const paciente = state.pacientes.find(p => p.id === c.paciente_id);
+          return `
+            <tr>
+              <td>${escapeHtml(paciente?.nome || "—")}</td>
+              <td>${formatDateTime(c.data_hora)}</td>
+              <td>${escapeHtml(c.observacoes || "")}</td>
+              <td class="text-nowrap">
+                <button class="btn btn-sm btn-outline-primary" onclick="editConsulta('${c.id}')">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteConsulta('${c.id}')">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      tbody.innerHTML = rows || `<tr><td colspan="4" class="text-center text-muted">Nenhuma consulta encontrada.</td></tr>`;
+      updateStats();
+    }
+
+    function resetConsultaForm() {
+      $("#consultaFormTitle").textContent = "Agendar consulta";
+      $("#consultaId").value = "";
+      $("#consultaPaciente").innerHTML = ""; // será preenchido por refreshPacienteOptions()
+      refreshPacienteOptions();
+      $("#consultaDataHora").value = "";
+      $("#consultaObs").value = "";
+    }
+
+    $("#consultaForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const id = $("#consultaId").value || uid();
+      const consulta = {
+        id,
+        paciente_id: $("#consultaPaciente").value,
+        data_hora: $("#consultaDataHora").value,
+        observacoes: $("#consultaObs").value.trim() || null
+      };
+      if (!consulta.paciente_id) { toast("Selecione um paciente.", true); return; }
+      if (!consulta.data_hora) { toast("Informe a data/hora.", true); return; }
+      const exists = state.consultas.find(c => c.id === id);
+      if (exists) {
+        Object.assign(exists, consulta);
+        toast("Consulta atualizada.");
+      } else {
+        state.consultas.push(consulta);
+        toast("Consulta agendada.");
+      }
+      storage.set("consultas", state.consultas);
+      routeTo("consultas-list");
+      renderConsultas();
+    });
+
+    function editConsulta(id) {
+      const c = state.consultas.find(x => x.id === id);
+      if (!c) return;
+      routeTo("consultas-form");
+      $("#consultaFormTitle").textContent = "Editar consulta";
+      $("#consultaId").value = c.id;
+      refreshPacienteOptions(c.paciente_id);
+      $("#consultaDataHora").value = c.data_hora || "";
+      $("#consultaObs").value = c.observacoes || "";
+    }
+
+    function deleteConsulta(id) {
+      if (!confirm("Deseja excluir esta consulta?")) return;
+      state.consultas = state.consultas.filter(c => c.id !== id);
+      storage.set("consultas", state.consultas);
+      renderConsultas();
+      toast("Consulta excluída.");
+    }
+
+    $("#searchConsulta").addEventListener("input", renderConsultas);
+
+    $("#btnExportConsultas").addEventListener("click", () => {
+      exportCSV("consultas.csv", state.consultas.map(c => ({
+        id: c.id,
+        paciente_id: c.paciente_id,
+        paciente_nome: (state.pacientes.find(p => p.id === c.paciente_id)?.nome) || "",
+        data_hora: c.data_hora,
+        observacoes: c.observacoes || ""
+      })));
+    });
+
+    // Relatórios
+    $("#btnExportCSVAll").addEventListener("click", () => {
+      const all = {
+        pacientes: state.pacientes,
+        consultas: state.consultas
+      };
+      const blob = new Blob([JSON.stringify(all, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "dados_sistema.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast("Arquivo JSON exportado.");
+    });
+
+    $("#btnPrint").addEventListener("click", () => window.print());
+
+    // Helpers
+    function refreshPacienteOptions(selectedId = "") {
+      const sel = $("#consultaPaciente");
+      if (!sel) return;
+      sel.innerHTML = `<option value="">Selecione...</option>` +
+        state.pacientes
+          .map(p => `<option value="${p.id}" ${p.id === selectedId ? "selected" : ""}>${escapeHtml(p.nome)}</option>`)
+          .join("");
+    }
+
+    function updateStats() {
+      $("#statPacientes").textContent = state.pacientes.length;
+      $("#statConsultas").textContent = state.consultas.length;
+      $("#statPerfil").textContent = state.user?.perfil || "—";
+    }
+
+    function exportCSV(filename, rows) {
+      if (!rows?.length) { toast("Sem dados para exportar.", true); return; }
+      const headers = Object.keys(rows[0]);
+      const csv = [
+        headers.join(";"),
+        ...rows.map(r => headers.map(h => `"${String(r[h] ?? "").replace(/"/g, '""')}"`).join(";"))
+      ].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast("CSV exportado.");
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "—";
+      try {
+        const d = new Date(iso);
+        const [y, m, day] = [d.getFullYear(), d.getMonth()+1, d.getDate()];
+        return `${String(day).padStart(2,"0")}/${String(m).padStart(2,"0")}/${y}`;
+      } catch { return "—"; }
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return "—";
+      try {
+        const d = new Date(iso);
+        const date = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+        const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+        return `${date} ${time}`;
+      } catch { return "—"; }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      })[c]);
+    }
+
+    // Toast simples
+    function toast(msg, error = false) {
+      const div = document.createElement("div");
+      div.className = "position-fixed bottom-0 end-0 p-3";
+      div.style.zIndex = 1080;
+      div.innerHTML = `
+        <div class="toast align-items-center text-bg-${error ? "danger" : "primary"} border-0 show" role="alert">
+          <div class="d-flex">
+            <div class="toast-body">${escapeHtml(msg)}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('.toast').remove()"></button>
+          </div>
+        </div>`;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 3000);
+    }
+
+    // Inicialização com alguns dados de exemplo (opcional)
+    if (state.pacientes.length === 0 && state.consultas.length === 0) {
+      state.pacientes = [
+        { id: uid(), nome: "João Silva", data_nascimento: "1988-05-12", telefone: "(67) 99999-1111", email: "joao@exemplo.com", endereco: "Rua A, 123", historico: "Alergia a penicilina." },
+        { id: uid(), nome: "Maria Souza", data_nascimento: "1979-11-03", telefone: "(67) 98888-2222", email: "maria@exemplo.com", endereco: "Av. B, 456", historico: "Hipertensão controlada." }
+      ];
+      storage.set("pacientes", state.pacientes);
+      state.consultas = [
+        { id: uid(), paciente_id: state.pacientes[0].id, data_hora: new Date().toISOString(), observacoes: "Retorno em 30 dias." }
+      ];
+      storage.set("consultas", state.consultas);
+    }
+
+    // Ao carregar a página, mostra login
+    routeTo("dashboard"); // prepara elementos
+  </script>
+</body>
+</html>
